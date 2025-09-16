@@ -9,6 +9,8 @@
 %%
 
 %public
+%class PythonLexer
+%type Yytoken
 
 %{
   private int comment_count = 0;
@@ -19,7 +21,6 @@
 %state COMMENT
 %unicode
 
-%debug
 
 ALPHA=[A-Za-z]
 DIGIT=[0-9]
