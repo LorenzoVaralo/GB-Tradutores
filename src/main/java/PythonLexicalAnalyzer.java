@@ -23,6 +23,8 @@ public class PythonLexicalAnalyzer {
 
     private String code;
     private int position = 0;
+    private int tabDepth = 0;
+    private boolean isLineStart = true;
 
     public PythonLexicalAnalyzer(File file) throws IOException {
         this.code = readFile(file);
@@ -42,6 +44,7 @@ public class PythonLexicalAnalyzer {
     }
 
     private Token getToken() {
+        setIndentationDepth();
         skipSpaces();
 
         if (position >= code.length()) {
@@ -89,6 +92,22 @@ public class PythonLexicalAnalyzer {
         return new Token(delimiterType, String.valueOf(c));
     }
 
+    private void setIndentationDepth() {
+        char c = code.charAt(position);
+        if (c == '\n') {
+            tabDepth = 0;
+            isLineStart = true;
+            position++;
+            setIndentationDepth();
+        } else if (isLineStart && (c == ' ')) {
+            tabDepth++;
+            position++;
+            setIndentationDepth();
+        } else {
+            isLineStart = false;
+        }
+    }
+    
     private void skipSpaces() {
         while (position < code.length()) {
             char c = code.charAt(position);
@@ -141,7 +160,7 @@ public class PythonLexicalAnalyzer {
             tokenString += c;
             position++;
         }
-
+        // TODO: throw error if string is not closed
         return new Token(TokenType.STRING, tokenString);
     }
 
