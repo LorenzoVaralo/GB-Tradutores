@@ -1,0 +1,29 @@
+# Código de teste 1
+
+y = 3.14
+z = 9.1e-31
+nome = "MeuNome"
+flag = True
+
+if x > 5 and y < 10:
+    print("Valores dentro do esperado")
+else:
+    print('Valores fora do esperado')
+
+for i in range(3):
+    print("Iteração {i}")
+
+while x > 0:
+    x -= 1
+
+def soma(a, b):
+    return a + b
+
+resultado = (x == y) or (x != y) and not flag
+verifica = x in [1, 2, 3] or x is None
+
+mensagem = """Essa é uma
+string multilinha de teste"""
+
+mensagem2 = '''Outra string
+multilinha de teste'''
