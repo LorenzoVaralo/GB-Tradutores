@@ -13,6 +13,11 @@ public class PythonLexicalAnalyzer {
             "not", "True", "False", "None", "in", "is"
     );
 
+    private static final Set<String> RELATIONAL_OPS = Set.of("==", "!=", "<=", ">=");
+    private static final Set<String> ASSIGNMENT_OPS = Set.of("+=", "-=", "*=", "/=");
+    private static final Set<String> ARITHMETIC_OPS_DOUBLE = Set.of("//", "**");
+    private static final Set<Character> ARITHMETIC_OPS_SINGLE = Set.of('*', '/', '+', '-', '%');
+    
     private static final Set<Character> SIMPLE_OPERATORS = Set.of(
             '+', '-', '*', '/', '%', '=', '<', '>', '!'
     );
@@ -21,13 +26,11 @@ public class PythonLexicalAnalyzer {
             '(', ')', '[', ']', '{', '}', ',', ':', '.', ';'
     );
 
-    private String code;
-    private int position = 0;
+    private Expression expr;
     private int tabDepth = 0;
-    private boolean isLineStart = true;
 
     public PythonLexicalAnalyzer(File file) throws IOException {
-        this.code = readFile(file);
+        this.expr = new Expression(readFile(file));
     }
 
     private String readFile(File file) throws IOException {
@@ -35,7 +38,7 @@ public class PythonLexicalAnalyzer {
     }
 
     public void analyzeCode() {
-        while (position < code.length()) {
+        while (expr.hasNext()) {
             Token token = getToken();
             if (nonNull(token)) {
                 System.out.println(token);
@@ -47,34 +50,34 @@ public class PythonLexicalAnalyzer {
         setIndentationDepth();
         skipSpaces();
 
-        if (position >= code.length()) {
+        if (!expr.hasNext()) {
             return null;
         }
 
-        char c = code.charAt(position);
-
-        if (c == '#') {
+        if (expr.getCurrentChar() == '#') {
             return readComment();
-        } else if (c == '"' || c == '\'') {
-            return readString();
-        } else if (Character.isDigit(c)) {
+        } else if (expr.currentCharIsAnyOf('"', '\'')) {
+            return readString(expr.getCurrentChar());
+        } else if (Character.isDigit(expr.getCurrentChar())) {
             return readNumber();
-        } else if (Character.isLetter(c) || c == '_') {
+        } else if (Character.isLetter(expr.getCurrentChar()) || expr.getCurrentChar() == '_') {
             return readIdentifier();
-        } else if (SIMPLE_OPERATORS.contains(c)) {
+        } else if (SIMPLE_OPERATORS.contains(expr.getCurrentChar())) {
             return readOperator();
-        } else if (DELIMITERS.contains(c)) {
+        } else if (DELIMITERS.contains(expr.getCurrentChar())) {
             return readDelimiter();
         }
 
-        char invalidSymbol = code.charAt(position++);
+        char invalidSymbol = expr.getCurrentChar();
+        expr.advance();
         throw new RuntimeException(
                 "Erro: símbolo inválido '" + invalidSymbol + "'"
         );
     }
 
     private Token readDelimiter() {
-        char c = code.charAt(position++);
+        char c = expr.getCurrentChar();
+        expr.advance();
         TokenType delimiterType = switch (c) {
             case '(' -> TokenType.LEFT_PARENTHESIS;
             case ')' -> TokenType.RIGHT_PARENTHESIS;
@@ -93,153 +96,96 @@ public class PythonLexicalAnalyzer {
     }
 
     private void setIndentationDepth() {
-        char c = code.charAt(position);
-        if (c == '\n') {
-            tabDepth = 0;
-            isLineStart = true;
-            position++;
-            setIndentationDepth();
-        } else if (isLineStart && (c == ' ')) {
-            tabDepth++;
-            position++;
-            setIndentationDepth();
-        } else {
-            isLineStart = false;
+        if (expr.getCurrentChar() == '\n') {
+            expr.next();
+            String startLineWhitespaces = expr.accumulateWhile(c -> c == '\t' || c == ' ');
+            tabDepth = startLineWhitespaces.length();
         }
     }
     
     private void skipSpaces() {
-        while (position < code.length()) {
-            char c = code.charAt(position);
-            if (c == ' ' || c == '\t' || c == '\r' || c == '\n') {
-                position++;
-            } else {
-                break;
-            }
-        }
+        expr.accumulateWhile(c -> c == ' ' || c == '\t' || c == '\r' || c == '\n');
     }
 
     private Token readComment() {
-        String result = "";
-        while (position < code.length() && code.charAt(position) != '\n' && code.charAt(position) != '\r') {
-            result += code.charAt(position++);
-        }
+        String result = expr.accumulateWhile(c -> c != '\n' && c != '\r');
+        
         return new Token(TokenType.COMMENT, result);
     }
 
-    private Token readString() {
-        char quotes = code.charAt(position);
-        String tokenString = "" + quotes;
-        position++;
+    private Token readString(char quoteType) {
+        assert quoteType == '"' || quoteType == '\'';
+        
+        final boolean multiline;
+        
+        String quotes = expr.accumulateWhile(c -> c == quoteType);
+        
+        if (quotes.length() == 2 || quotes.length() == 6)
+            return new Token(TokenType.STRING, quotes);
+        
+        multiline = quotes.length() >= 3;
+        int windowSize = multiline ? 4 : 2;
 
-        boolean multiline = false;
-        if (code.charAt(position) == quotes && code.charAt(position + 1) == quotes) {
-            multiline = true;
-            tokenString += "" + quotes + quotes;
-            position += 2;
+        String tokenString = quotes;
+
+        tokenString += expr.accumulateWhileWindow(windowSize, s ->  s.equals("\\"+quotes) || !s.endsWith(quotes) || (s.endsWith("\n") && !multiline));
+        tokenString += expr.getNext(windowSize);
+        expr.advance(windowSize);
+        
+        if (tokenString.contains("\n") && !multiline) {
+            throw new RuntimeException("Erro: string não fechada");
         }
-
-        while (position < code.length()) {
-            char c = code.charAt(position);
-
-            if (multiline) {
-                if (c == quotes && code.charAt(position + 1) == quotes && code.charAt(position + 2) == quotes) {
-                    tokenString += "" + quotes + quotes + quotes;
-                    position += 3;
-                    break;
-                }
-            } else {
-                if (c == quotes) {
-                    tokenString += c;
-                    position++;
-                    break;
-                }
-                if (c == '\n') break;
-            }
-
-            tokenString += c;
-            position++;
-        }
-        // TODO: throw error if string is not closed
+        
         return new Token(TokenType.STRING, tokenString);
     }
 
     private Token readNumber() {
-        String number = "";
-        boolean hasDecimalPoint = false;
-        boolean hasScientificNotation = false;
+        boolean isFloat = false;
+        String numberStr = expr.accumulateWhile(Character::isDigit);
+        
+        if (expr.hasNext() && expr.getCurrentChar() == '.') {
+            isFloat = true;
+            numberStr += expr.getCurrentChar(); // Append the '.'
+            expr.advance(); // Consume the '.'
 
-        while (position < code.length()) {
-            char c = code.charAt(position);
-            if (Character.isDigit(c)) {
-                number += c;
-                position++;
-            } else if (c == '.' && !hasDecimalPoint && !hasScientificNotation) {
-                hasDecimalPoint = true;
-                number += c;
-                position++;
-            } else {
-                break;
+            String fractionPart = expr.accumulateWhile(Character::isDigit);
+            if (fractionPart.isEmpty()) {
+                // Error for numbers ending in a dot, like "123."
+                throw new RuntimeException("Erro: número decimal inválido '" + numberStr + "'");
             }
+            numberStr += fractionPart;
         }
 
-        if (position < code.length()) {
-            char c = code.charAt(position);
-            if (c == 'e' || c == 'E') {
-                hasScientificNotation = true;
-                number += c;
-                position++;
+        if (expr.hasNext() && expr.currentCharIsAnyOf('e', 'E')) {
+            isFloat = true;
+            numberStr += expr.getCurrentChar(); // Append the 'e' or 'E'
+            expr.advance(); // Consume the 'e' or 'E'
 
-                if (position < code.length()) {
-                    char nextChar = code.charAt(position);
-                    if (nextChar == '+' || nextChar == '-') {
-                        number += nextChar;
-                        position++;
-                    }
-                }
-
-                boolean hasExponentDigits = false;
-                while (position < code.length()) {
-                    char exponentChar = code.charAt(position);
-                    if (Character.isDigit(exponentChar)) {
-                        number += exponentChar;
-                        position++;
-                        hasExponentDigits = true;
-                    } else {
-                        break;
-                    }
-                }
-
-                if (!hasExponentDigits) {
-                    throw new RuntimeException(
-                            "Erro: número científico inválido '" + number + "'"
-                    );
-                }
+            // Check for an optional '+' or '-' sign for the exponent.
+            if (expr.hasNext() && (expr.currentCharIsAnyOf('+', '-'))) {
+                numberStr += expr.getCurrentChar(); // Append the sign
+                expr.advance(); // Consume the sign
             }
+
+            String exponentPart = expr.accumulateWhile(Character::isDigit);
+            if (exponentPart.isEmpty()) {
+                // Error for incomplete scientific notation like "123e" or "123e-"
+                throw new RuntimeException("Erro: número científico inválido '" + numberStr + "'");
+            }
+            numberStr += exponentPart;
         }
 
-        TokenType tokenType;
-        if (hasScientificNotation || hasDecimalPoint) {
-            tokenType = TokenType.FLOAT;
-        } else {
-            tokenType = TokenType.INTEGER;
+        if (expr.hasNext() && Character.isLetter(expr.getCurrentChar())) {
+            throw new RuntimeException("Erro: número inválido '" + numberStr + expr.getCurrentChar() + "'");
         }
 
-        return new Token(tokenType, number);
+        // 5. Determine the token type based on whether a '.' or 'e' was found.
+        TokenType tokenType = isFloat ? TokenType.FLOAT : TokenType.INTEGER;
+        return new Token(tokenType, numberStr);
     }
 
     private Token readIdentifier() {
-        String text = "";
-
-        while (position < code.length()) {
-            char c = code.charAt(position);
-            if (Character.isLetterOrDigit(c) || c == '_') {
-                text += c;
-                position++;
-            } else {
-                break;
-            }
-        }
+        String text = expr.accumulateWhile(c -> Character.isLetterOrDigit(c) || c == '_');
 
         TokenType tokenType;
 
@@ -261,46 +207,33 @@ public class PythonLexicalAnalyzer {
     }
 
     private Token readOperator() {
-        char c = code.charAt(position);
+        char firstOpChar = expr.getCurrentChar();
+        char secondOpChar = expr.getNext().orElse('\0');
 
-        if (SIMPLE_OPERATORS.contains(code.charAt(position + 1))) {
-            char next = code.charAt(position + 1);
-            String doubleOp = "" + c + next;
+        String doubleOp = "" + firstOpChar + secondOpChar;
 
-            TokenType doubleType = switch (doubleOp) {
-                case "==" -> TokenType.RELATIONAL_OP;
-                case "!=" -> TokenType.RELATIONAL_OP;
-                case "<=" -> TokenType.RELATIONAL_OP;
-                case ">=" -> TokenType.RELATIONAL_OP;
-                case "+=" -> TokenType.ASSIGNMENT_OP;
-                case "-=" -> TokenType.ASSIGNMENT_OP;
-                case "*=" -> TokenType.ASSIGNMENT_OP;
-                case "/=" -> TokenType.ASSIGNMENT_OP;
-                case "//" -> TokenType.ARITHMETIC_OP;
-                case "**" -> TokenType.ARITHMETIC_OP;
-                default -> null;
-            };
-
-            if (nonNull(doubleType)) {
-                position += 2;
-                return new Token(doubleType, doubleOp);
-            }
+        TokenType doubleType = switch (doubleOp) {
+            case String op when RELATIONAL_OPS.contains(op) -> TokenType.RELATIONAL_OP;
+            case String op when ASSIGNMENT_OPS.contains(op) -> TokenType.ASSIGNMENT_OP;
+            case String op when ARITHMETIC_OPS_DOUBLE.contains(op) -> TokenType.ARITHMETIC_OP;
+            default -> null;
+        };
+        
+        if (doubleType != null) {
+            expr.advance(); // Consume firstOpChar
+            expr.advance(); // Consume secondOpChar
+            return new Token(doubleType, doubleOp);
         }
-
-        position++;
-        TokenType simpleType = switch (c) {
-            case '+' -> TokenType.ARITHMETIC_OP;
-            case '-' -> TokenType.ARITHMETIC_OP;
-            case '*' -> TokenType.ARITHMETIC_OP;
-            case '/' -> TokenType.ARITHMETIC_OP;
-            case '%' -> TokenType.ARITHMETIC_OP;
-            case '<' -> TokenType.RELATIONAL_OP;
-            case '>' -> TokenType.RELATIONAL_OP;
-            case '=' -> TokenType.ASSIGNMENT_OP;
-            case '!' -> TokenType.LOGICAL_OP;
+        TokenType simpleType = switch (Character.valueOf(firstOpChar)) {
+            case Character op when ARITHMETIC_OPS_SINGLE.contains(op) -> TokenType.ARITHMETIC_OP;
+            case Character op when Set.of('<', '>').contains(op) -> TokenType.RELATIONAL_OP;
+            case Character op when op.equals('=') -> TokenType.ASSIGNMENT_OP;
+            case Character op when op.equals('!') -> TokenType.LOGICAL_OP;
             default -> TokenType.ERROR;
         };
-
-        return new Token(simpleType, String.valueOf(c));
+        
+        expr.advance(); // Consume firstOpChar
+        assert simpleType != TokenType.ERROR : "Operador inválido: " + firstOpChar;
+        return new Token(simpleType, String.valueOf(firstOpChar));
     }
 }
