@@ -145,6 +145,7 @@ public class PythonLexicalAnalyzer {
 
     private Token readNumber() {
         boolean isFloat = false;
+        boolean isScientific = false;
         String numberStr = expr.accumulateWhile(Character::isDigit);
         
         if (expr.hasNext() && expr.getCurrentChar() == '.') {
@@ -176,6 +177,11 @@ public class PythonLexicalAnalyzer {
                 // Error for incomplete scientific notation like "123e" or "123e-"
                 throw new RuntimeException("Erro: número científico inválido '" + numberStr + "'");
             }
+            else {
+                //If scientific notation is complete the flag isScientific is set to true
+                isFloat = false;
+                isScientific = true;
+            }
             numberStr += exponentPart;
         }
 
@@ -183,8 +189,16 @@ public class PythonLexicalAnalyzer {
             throw new RuntimeException("Erro: número inválido '" + numberStr + expr.getCurrentChar() + "'");
         }
 
-        // 5. Determine the token type based on whether a '.' or 'e' was found.
-        TokenType tokenType = isFloat ? TokenType.FLOAT : TokenType.INTEGER;
+        // 5. Determine the token type.
+        TokenType tokenType;
+        if (isScientific) {
+            tokenType = TokenType.SCIENTIFIC;
+        } else if (isFloat) {
+            tokenType = TokenType.FLOAT;
+        } else {
+            tokenType = TokenType.INTEGER;
+        }
+
         return new Token(tokenType, numberStr);
     }
 
