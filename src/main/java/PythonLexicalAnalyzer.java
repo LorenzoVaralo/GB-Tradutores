@@ -26,11 +26,15 @@ public class PythonLexicalAnalyzer {
             '(', ')', '[', ']', '{', '}', ',', ':', '.', ';'
     );
 
-    private Expression expr;
+    private final Expression expr;
     private int tabDepth = 0;
 
     public PythonLexicalAnalyzer(File file) throws IOException {
         this.expr = new Expression(readFile(file));
+    }
+    
+    public PythonLexicalAnalyzer(String code) {
+        this.expr = new Expression(code);
     }
 
     private String readFile(File file) throws IOException {

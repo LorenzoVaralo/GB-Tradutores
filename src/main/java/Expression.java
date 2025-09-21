@@ -6,7 +6,7 @@ public class Expression {
     private int index = 0;
 
     public Expression(String value) {
-        this.value = value != null ? value : "";
+        this.value = value != null ? value+"\n" : "\n";
     }
 
     public Optional<Character> next() {
