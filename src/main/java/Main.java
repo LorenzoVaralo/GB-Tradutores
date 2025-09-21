@@ -1,26 +1,29 @@
-import java.io.FileReader;
+import java.io.File;
 import java.io.IOException;
-import java.io.StringReader;
+import java.nio.file.Paths;
 
 public class Main {
     public static void main(String[] args) throws IOException {
-        //        final var sourceCode = "src/test/data/test.txt";
-        //        final var lex = new SimpleScanner(new FileReader(sourceCode));
-        final var code = 
-                "pi = 3.14\n" + 
-                "if (pi > 3):\n" +
-                "\tprint(pi)";
-        final var lex = new PythonLexer(new StringReader(code));
+        String rootPath = Paths.get("").toAbsolutePath().toString();
+        String subPath  = "/src/main/python/codes";
+        String sourceCode = rootPath + subPath + "/program2.txt";
 
-        System.out.println("-".repeat(40));
-        System.out.println("| Token | Lexeme |");
-        System.out.println("-".repeat(40));
-        
-        do {
-            final var token = lex.yylex();
-            if (token == null) break;
-            System.out.printf("| %-5s | %-6s |\n", token.m_index, token.m_text);
-            
-        } while (!lex.yyatEOF());
+        System.out.println("Analisando arquivo: " + sourceCode);
+        System.out.println("Tokens encontrados:");
+        System.out.println("-".repeat(45));
+
+        try {
+            File codigoTeste = new File(sourceCode);
+
+            PythonLexicalAnalyzer lexical = new PythonLexicalAnalyzer(codigoTeste);
+
+            lexical.analyzeCode();
+
+            System.out.println("-".repeat(45));
+            System.out.println("Análise concluída!");
+        } catch (Exception e) {
+            System.err.println("Erro durante análise: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }

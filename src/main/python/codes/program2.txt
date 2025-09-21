@@ -1,0 +1,6 @@
+# Código de teste 2
+
+y = @34
+z = 9.1e-31
+nome = "MeuNome"
+flag = True
