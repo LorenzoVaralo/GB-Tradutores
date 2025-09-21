@@ -117,9 +117,9 @@ public class PythonLexicalAnalyzerTest {
         String code = "1e5 2.5E-3 1.23e+10";
         List<String> tokens = captureTokens(code);
         assertEquals(3, tokens.size());
-        assertToken(tokens.get(0), "1e5", TokenType.FLOAT);
-        assertToken(tokens.get(1), "2.5E-3", TokenType.FLOAT);
-        assertToken(tokens.get(2), "1.23e+10", TokenType.FLOAT);
+        assertToken(tokens.get(0), "1e5", TokenType.SCIENTIFIC);
+        assertToken(tokens.get(1), "2.5E-3", TokenType.SCIENTIFIC);
+        assertToken(tokens.get(2), "1.23e+10", TokenType.SCIENTIFIC);
     }
 
     @Test
