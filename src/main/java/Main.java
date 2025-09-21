@@ -6,7 +6,7 @@ public class Main {
     public static void main(String[] args) throws IOException {
         String rootPath = Paths.get("").toAbsolutePath().toString();
         String subPath  = "/src/main/python/codes";
-        String sourceCode = rootPath + subPath + "/program2.txt";
+        String sourceCode = rootPath + subPath + "/program.txt";
 
         System.out.println("Analisando arquivo: " + sourceCode);
         System.out.println("Tokens encontrados:");

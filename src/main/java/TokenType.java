@@ -22,10 +22,7 @@ public enum TokenType {
     COLON("Dois pontos"),
     DOT("Ponto"),
     COMMENT("Comentário"),
-    ERROR("Token inválido"),
-    INDENT("Indentação"),
-    DEDENT("Desindentação"),
-    NEWLINE("Nova linha");
+    ERROR("Token inválido");
 
     private final String desc;
 
