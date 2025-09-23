@@ -17,7 +17,7 @@ public class PythonLexicalAnalyzer {
     private static final Set<String> ASSIGNMENT_OPS = Set.of("+=", "-=", "*=", "/=");
     private static final Set<String> ARITHMETIC_OPS_DOUBLE = Set.of("//", "**");
     private static final Set<Character> ARITHMETIC_OPS_SINGLE = Set.of('*', '/', '+', '-', '%');
-    
+
     private static final Set<Character> SIMPLE_OPERATORS = Set.of(
             '+', '-', '*', '/', '%', '=', '<', '>', '!'
     );
@@ -31,7 +31,7 @@ public class PythonLexicalAnalyzer {
     public PythonLexicalAnalyzer(File file) throws IOException {
         this.expr = new Expression(readFile(file));
     }
-    
+
     public PythonLexicalAnalyzer(String code) {
         this.expr = new Expression(code);
     }
@@ -105,50 +105,50 @@ public class PythonLexicalAnalyzer {
 
                     String indentation = expr.accumulateWhile(symbol -> symbol == ' ' || symbol == '\t');
                     if (indentation.length() != 4) {
-                        throw new RuntimeException("Erro de indentação: identação incorreta após o símbolo ':'");
+                        throw new RuntimeException("Erro de indentação: indentação incorreta após o símbolo ':'");
                     }
                 } else {
                     throw new RuntimeException("Erro de indentação: esperado quebra de linha após ':'");
                 }
             }
         }
-        
+
         return new Token(delimiterType, String.valueOf(c));
     }
-    
+
     private void skipSpaces() {
         expr.accumulateWhile(c -> c == ' ' || c == '\t' || c == '\r' || c == '\n');
     }
 
     private Token readComment() {
         String result = expr.accumulateWhile(c -> c != '\n' && c != '\r');
-        
+
         return new Token(TokenType.COMMENT, result);
     }
 
     private Token readString(char quoteType) {
         assert quoteType == '"' || quoteType == '\'';
-        
+
         final boolean multiline;
-        
+
         String quotes = expr.accumulateWhile(c -> c == quoteType);
-        
+
         if (quotes.length() == 2 || quotes.length() == 6)
             return new Token(TokenType.STRING, quotes);
-        
+
         multiline = quotes.length() >= 3;
         int windowSize = multiline ? 4 : 2;
 
         String tokenString = quotes;
 
-        tokenString += expr.accumulateWhileWindow(windowSize, s ->  s.equals("\\"+quotes) || !s.endsWith(quotes) || (s.endsWith("\n") && !multiline));
+        tokenString += expr.accumulateWhileWindow(windowSize, s -> s.equals("\\" + quotes) || !s.endsWith(quotes) || (s.endsWith("\n") && !multiline));
         tokenString += expr.getNext(windowSize);
         expr.advance(windowSize);
-        
+
         if (tokenString.contains("\n") && !multiline) {
             throw new RuntimeException("Erro: string não fechada");
         }
-        
+
         return new Token(TokenType.STRING, tokenString);
     }
 
@@ -156,38 +156,32 @@ public class PythonLexicalAnalyzer {
         boolean isFloat = false;
         boolean isScientific = false;
         String numberStr = expr.accumulateWhile(Character::isDigit);
-        
+
         if (expr.hasNext() && expr.getCurrentChar() == '.') {
             isFloat = true;
-            numberStr += expr.getCurrentChar(); // Append the '.'
-            expr.advance(); // Consume the '.'
+            numberStr += expr.getCurrentChar();
+            expr.advance();
 
             String fractionPart = expr.accumulateWhile(Character::isDigit);
             if (fractionPart.isEmpty()) {
-                // Error for numbers ending in a dot, like "123."
                 throw new RuntimeException("Erro: número decimal inválido '" + numberStr + "'");
             }
             numberStr += fractionPart;
         }
 
         if (expr.hasNext() && expr.currentCharIsAnyOf('e', 'E')) {
-            isFloat = true;
-            numberStr += expr.getCurrentChar(); // Append the 'e' or 'E'
-            expr.advance(); // Consume the 'e' or 'E'
+            numberStr += expr.getCurrentChar();
+            expr.advance();
 
-            // Check for an optional '+' or '-' sign for the exponent.
             if (expr.hasNext() && (expr.currentCharIsAnyOf('+', '-'))) {
-                numberStr += expr.getCurrentChar(); // Append the sign
-                expr.advance(); // Consume the sign
+                numberStr += expr.getCurrentChar();
+                expr.advance();
             }
 
             String exponentPart = expr.accumulateWhile(Character::isDigit);
             if (exponentPart.isEmpty()) {
-                // Error for incomplete scientific notation like "123e" or "123e-"
                 throw new RuntimeException("Erro: número científico inválido '" + numberStr + "'");
-            }
-            else {
-                //If scientific notation is complete the flag isScientific is set to true
+            } else {
                 isFloat = false;
                 isScientific = true;
             }
@@ -198,7 +192,6 @@ public class PythonLexicalAnalyzer {
             throw new RuntimeException("Erro: número inválido '" + numberStr + expr.getCurrentChar() + "'");
         }
 
-        // 5. Determine the token type.
         TokenType tokenType;
         if (isScientific) {
             tokenType = TokenType.SCIENTIFIC;
@@ -245,10 +238,10 @@ public class PythonLexicalAnalyzer {
             case String op when ARITHMETIC_OPS_DOUBLE.contains(op) -> TokenType.ARITHMETIC_OP;
             default -> null;
         };
-        
+
         if (doubleType != null) {
-            expr.advance(); // Consume firstOpChar
-            expr.advance(); // Consume secondOpChar
+            expr.advance();
+            expr.advance();
             return new Token(doubleType, doubleOp);
         }
         TokenType simpleType = switch (Character.valueOf(firstOpChar)) {
@@ -258,8 +251,8 @@ public class PythonLexicalAnalyzer {
             case Character op when op.equals('!') -> TokenType.LOGICAL_OP;
             default -> TokenType.ERROR;
         };
-        
-        expr.advance(); // Consume firstOpChar
+
+        expr.advance();
         assert simpleType != TokenType.ERROR : "Operador inválido: " + firstOpChar;
         return new Token(simpleType, String.valueOf(firstOpChar));
     }
