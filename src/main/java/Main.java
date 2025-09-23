@@ -1,9 +1,8 @@
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Paths;
 
 public class Main {
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         String rootPath = Paths.get("").toAbsolutePath().toString();
         String subPath  = "/src/main/python/codes";
         String sourceCode = rootPath + subPath + "/program.txt";
@@ -13,9 +12,9 @@ public class Main {
         System.out.println("-".repeat(45));
 
         try {
-            File codigoTeste = new File(sourceCode);
+            File testCode = new File(sourceCode);
 
-            PythonLexicalAnalyzer lexical = new PythonLexicalAnalyzer(codigoTeste);
+            PythonLexicalAnalyzer lexical = new PythonLexicalAnalyzer(testCode);
 
             lexical.analyzeCode();
 

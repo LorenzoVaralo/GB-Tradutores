@@ -258,9 +258,9 @@ public class PythonLexicalAnalyzerTest {
     // Test Delimiters
     @Test
     public void testDelimiters() {
-        String code = "( ) [ ] { } , : . ;";
+        String code = "( ) [ ] { } , . ;";
         List<String> tokens = captureTokens(code);
-        assertEquals(10, tokens.size());
+        assertEquals(9, tokens.size());
         assertToken(tokens.get(0), "(", TokenType.LEFT_PARENTHESIS);
         assertToken(tokens.get(1), ")", TokenType.RIGHT_PARENTHESIS);
         assertToken(tokens.get(2), "[", TokenType.LEFT_BRACKET);
@@ -268,9 +268,29 @@ public class PythonLexicalAnalyzerTest {
         assertToken(tokens.get(4), "{", TokenType.LEFT_BRACE);
         assertToken(tokens.get(5), "}", TokenType.RIGHT_BRACE);
         assertToken(tokens.get(6), ",", TokenType.COMMA);
-        assertToken(tokens.get(7), ":", TokenType.COLON);
-        assertToken(tokens.get(8), ".", TokenType.DOT);
-        assertToken(tokens.get(9), ";", TokenType.SEMICOLON);
+        assertToken(tokens.get(7), ".", TokenType.DOT);
+        assertToken(tokens.get(8), ";", TokenType.SEMICOLON);
+    }
+    
+    @Test
+    public void testColon() {
+        String code = "while x > 0:\n" +
+                "    x -= 1";
+        List<String> tokens = captureTokens(code);
+        assertToken(tokens.get(4), ":", TokenType.COLON);
+    }
+    
+    @Test(expected = RuntimeException.class)
+    public void testInvalidIndentation() {
+        String code = "while x > 0:\n" +
+                "x -= 1";
+        List<String> tokens = captureTokens(code);
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void testAnotherInvalidIndentation() {
+        String code = "while x > 0: x -= 1";
+        List<String> tokens = captureTokens(code);
     }
 
     // Test Comments
@@ -329,18 +349,6 @@ public class PythonLexicalAnalyzerTest {
         assertToken(tokens.get(4), ",", TokenType.COMMA);
         assertToken(tokens.get(5), "3", TokenType.INTEGER);
         assertToken(tokens.get(6), "]", TokenType.RIGHT_BRACKET);
-    }
-
-    @Test
-    public void testDictLiteral() {
-        String code = "{'key': 'value'}";
-        List<String> tokens = captureTokens(code);
-        assertEquals(5, tokens.size());
-        assertToken(tokens.get(0), "{", TokenType.LEFT_BRACE);
-        assertToken(tokens.get(1), "'key'", TokenType.STRING);
-        assertToken(tokens.get(2), ":", TokenType.COLON);
-        assertToken(tokens.get(3), "'value'", TokenType.STRING);
-        assertToken(tokens.get(4), "}", TokenType.RIGHT_BRACE); 
     }
 
     @Test
