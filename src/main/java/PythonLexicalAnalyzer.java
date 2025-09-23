@@ -28,18 +28,22 @@ public class PythonLexicalAnalyzer {
 
     private final Expression expr;
 
+    // Construtor que recebe arquivo
     public PythonLexicalAnalyzer(File file) throws IOException {
         this.expr = new Expression(readFile(file));
     }
 
+    // Construtor que recebe string de código
     public PythonLexicalAnalyzer(String code) {
         this.expr = new Expression(code);
     }
 
+    // Lê o conteúdo de um arquivo
     private String readFile(File file) throws IOException {
         return Files.readString(file.toPath());
     }
 
+    // Método principal que analisa todo o código e imprime os tokens
     public void analyzeCode() {
         while (expr.hasNext()) {
             Token token = getToken();
@@ -49,6 +53,7 @@ public class PythonLexicalAnalyzer {
         }
     }
 
+    // Identifica e retorna o próximo token do código
     private Token getToken() {
         skipSpaces();
 
@@ -77,6 +82,7 @@ public class PythonLexicalAnalyzer {
         );
     }
 
+    // Identifica delimitadores como parênteses, chaves, vírgulas, etc.
     private Token readDelimiter() {
         char c = expr.getCurrentChar();
         expr.advance();
@@ -105,7 +111,7 @@ public class PythonLexicalAnalyzer {
 
                     String indentation = expr.accumulateWhile(symbol -> symbol == ' ' || symbol == '\t');
                     if (indentation.length() != 4) {
-                        throw new RuntimeException("Erro de indentação: indentação incorreta após o símbolo ':'");
+                        throw new RuntimeException("Erro de indentação: identação incorreta após o símbolo ':'");
                     }
                 } else {
                     throw new RuntimeException("Erro de indentação: esperado quebra de linha após ':'");
@@ -116,16 +122,19 @@ public class PythonLexicalAnalyzer {
         return new Token(delimiterType, String.valueOf(c));
     }
 
+    // Pula espaços em branco, tabs e quebras de linha
     private void skipSpaces() {
         expr.accumulateWhile(c -> c == ' ' || c == '\t' || c == '\r' || c == '\n');
     }
 
+    // Identifica comentários que começam com #
     private Token readComment() {
         String result = expr.accumulateWhile(c -> c != '\n' && c != '\r');
 
         return new Token(TokenType.COMMENT, result);
     }
 
+    // Identifica strings com aspas simples ou duplas, incluindo multiline
     private Token readString(char quoteType) {
         assert quoteType == '"' || quoteType == '\'';
 
@@ -141,7 +150,7 @@ public class PythonLexicalAnalyzer {
 
         String tokenString = quotes;
 
-        tokenString += expr.accumulateWhileWindow(windowSize, s -> s.equals("\\" + quotes) || !s.endsWith(quotes) || (s.endsWith("\n") && !multiline));
+        tokenString += expr.accumulateWhileWindow(windowSize, s ->  s.equals("\\"+quotes) || !s.endsWith(quotes) || (s.endsWith("\n") && !multiline));
         tokenString += expr.getNext(windowSize);
         expr.advance(windowSize);
 
@@ -152,6 +161,7 @@ public class PythonLexicalAnalyzer {
         return new Token(TokenType.STRING, tokenString);
     }
 
+    // Identifica números inteiros, floats e notação científica
     private Token readNumber() {
         boolean isFloat = false;
         boolean isScientific = false;
@@ -181,7 +191,8 @@ public class PythonLexicalAnalyzer {
             String exponentPart = expr.accumulateWhile(Character::isDigit);
             if (exponentPart.isEmpty()) {
                 throw new RuntimeException("Erro: número científico inválido '" + numberStr + "'");
-            } else {
+            }
+            else {
                 isFloat = false;
                 isScientific = true;
             }
@@ -204,6 +215,7 @@ public class PythonLexicalAnalyzer {
         return new Token(tokenType, numberStr);
     }
 
+    // Identifica identificadores e palavras reservadas
     private Token readIdentifier() {
         String text = expr.accumulateWhile(c -> Character.isLetterOrDigit(c) || c == '_');
 
@@ -226,6 +238,7 @@ public class PythonLexicalAnalyzer {
         return new Token(tokenType, text);
     }
 
+    // Identifica operadores aritméticos, relacionais, lógicos e de atribuição
     private Token readOperator() {
         char firstOpChar = expr.getCurrentChar();
         char secondOpChar = expr.getNext().orElse('\0');
