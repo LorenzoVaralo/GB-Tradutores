@@ -27,7 +27,6 @@ public class PythonLexicalAnalyzer {
     );
 
     private final Expression expr;
-    private int tabDepth = 0;
 
     public PythonLexicalAnalyzer(File file) throws IOException {
         this.expr = new Expression(readFile(file));
@@ -51,7 +50,6 @@ public class PythonLexicalAnalyzer {
     }
 
     private Token getToken() {
-        setIndentationDepth();
         skipSpaces();
 
         if (!expr.hasNext()) {
@@ -96,15 +94,26 @@ public class PythonLexicalAnalyzer {
             default -> TokenType.ERROR;
         };
 
-        return new Token(delimiterType, String.valueOf(c));
-    }
+        if (delimiterType == TokenType.COLON) {
+            if (expr.hasNext()) {
+                char nextChar = expr.getCurrentChar();
+                if (nextChar == '\r' || nextChar == '\n') {
+                    expr.advance();
+                    if (nextChar == '\r' && expr.hasNext() && expr.getCurrentChar() == '\n') {
+                        expr.advance();
+                    }
 
-    private void setIndentationDepth() {
-        if (expr.getCurrentChar() == '\n') {
-            expr.next();
-            String startLineWhitespaces = expr.accumulateWhile(c -> c == '\t' || c == ' ');
-            tabDepth = startLineWhitespaces.length();
+                    String indentation = expr.accumulateWhile(symbol -> symbol == ' ' || symbol == '\t');
+                    if (indentation.length() != 4) {
+                        throw new RuntimeException("Erro de indentação: identação incorreta após o símbolo ':'");
+                    }
+                } else {
+                    throw new RuntimeException("Erro de indentação: esperado quebra de linha após ':'");
+                }
+            }
         }
+        
+        return new Token(delimiterType, String.valueOf(c));
     }
     
     private void skipSpaces() {
