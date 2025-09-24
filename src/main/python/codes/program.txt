@@ -12,18 +12,3 @@ else:
 
 for i in range(3):
     print("Iteração {i}")
-
-while x > 0:
-    x -= 1
-
-def soma(a, b):
-    return a + b
-
-resultado = (x == y) or (x != y) and not flag
-verifica = x in [1, 2, 3]
-
-mensagem = """Essa é uma
-string multilinha de teste"""
-
-mensagem2 = '''Outra string
-multilinha de teste'''
