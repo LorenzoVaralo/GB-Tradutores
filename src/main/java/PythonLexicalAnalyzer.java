@@ -1,4 +1,6 @@
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Set;
@@ -6,31 +8,45 @@ import java.util.Set;
 import static java.util.Objects.nonNull;
 
 public class PythonLexicalAnalyzer {
-
-    private static final Set<String> RESERVED_WORDS = Set.of(
-            "if", "else", "for", "while", "def", "class", "return",
-            "import", "from", "try", "except", "with", "and", "or",
-            "not", "True", "False", "None", "in", "is"
-    );
-
-    private static final Set<String> RELATIONAL_OPS = Set.of("==", "!=", "<=", ">=");
-    private static final Set<String> ASSIGNMENT_OPS = Set.of("+=", "-=", "*=", "/=");
-    private static final Set<String> ARITHMETIC_OPS_DOUBLE = Set.of("//", "**");
-    private static final Set<Character> ARITHMETIC_OPS_SINGLE = Set.of('*', '/', '+', '-', '%');
-
-    private static final Set<Character> SIMPLE_OPERATORS = Set.of(
-            '+', '-', '*', '/', '%', '=', '<', '>', '!'
-    );
-
-    private static final Set<Character> DELIMITERS = Set.of(
-            '(', ')', '[', ']', '{', '}', ',', ':', '.', ';'
-    );
-
+    
     private final Expression expr;
 
-    // Construtor que recebe arquivo
-    public PythonLexicalAnalyzer(File file) throws IOException {
+    // Construtor que recebe arquivo e verifica indentações
+    public PythonLexicalAnalyzer(File file) throws IOException, RuntimeException {
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            int lineNumber = 0;
+
+            while ((line = reader.readLine()) != null) {
+                lineNumber++;
+                if (line.trim().isEmpty() || line.trim().startsWith("#")) {
+                    continue;
+                }
+
+                int currentIndent = countIndentation(line);
+                
+                if (currentIndent % 4 != 0) {
+                    throw new RuntimeException("Erro de indentação: identação incorreta na linha " + lineNumber);
+                }
+            }
+        }
+
         this.expr = new Expression(readFile(file));
+    }
+
+    // Realiza a contagem de espaços no início da linha
+    private int countIndentation(String line) {
+        int count = 0;
+        for (char c : line.toCharArray()) {
+            if (c == ' ') {
+                count++;
+            } else if (c == '\t') {
+                count += 4;
+            } else {
+                break;
+            }
+        }
+        return count;
     }
 
     // Construtor que recebe string de código
@@ -69,9 +85,9 @@ public class PythonLexicalAnalyzer {
             return readNumber();
         } else if (Character.isLetter(expr.getCurrentChar()) || expr.getCurrentChar() == '_') {
             return readIdentifier();
-        } else if (SIMPLE_OPERATORS.contains(expr.getCurrentChar())) {
+        } else if (Constants.SIMPLE_OPERATORS.contains(expr.getCurrentChar())) {
             return readOperator();
-        } else if (DELIMITERS.contains(expr.getCurrentChar())) {
+        } else if (Constants.DELIMITERS.contains(expr.getCurrentChar())) {
             return readDelimiter();
         }
 
@@ -221,7 +237,7 @@ public class PythonLexicalAnalyzer {
 
         TokenType tokenType;
 
-        if (RESERVED_WORDS.contains(text)) {
+        if (Constants.RESERVED_WORDS.contains(text)) {
             if (text.equals("True") || text.equals("False")) {
                 tokenType = TokenType.BOOLEAN;
             } else if (text.equals("None")) {
@@ -246,9 +262,9 @@ public class PythonLexicalAnalyzer {
         String doubleOp = "" + firstOpChar + secondOpChar;
 
         TokenType doubleType = switch (doubleOp) {
-            case String op when RELATIONAL_OPS.contains(op) -> TokenType.RELATIONAL_OP;
-            case String op when ASSIGNMENT_OPS.contains(op) -> TokenType.ASSIGNMENT_OP;
-            case String op when ARITHMETIC_OPS_DOUBLE.contains(op) -> TokenType.ARITHMETIC_OP;
+            case String op when Constants.RELATIONAL_OPS.contains(op) -> TokenType.RELATIONAL_OP;
+            case String op when Constants.ASSIGNMENT_OPS.contains(op) -> TokenType.ASSIGNMENT_OP;
+            case String op when Constants.ARITHMETIC_OPS_DOUBLE.contains(op) -> TokenType.ARITHMETIC_OP;
             default -> null;
         };
 
@@ -258,7 +274,7 @@ public class PythonLexicalAnalyzer {
             return new Token(doubleType, doubleOp);
         }
         TokenType simpleType = switch (Character.valueOf(firstOpChar)) {
-            case Character op when ARITHMETIC_OPS_SINGLE.contains(op) -> TokenType.ARITHMETIC_OP;
+            case Character op when Constants.ARITHMETIC_OPS_SINGLE.contains(op) -> TokenType.ARITHMETIC_OP;
             case Character op when Set.of('<', '>').contains(op) -> TokenType.RELATIONAL_OP;
             case Character op when op.equals('=') -> TokenType.ASSIGNMENT_OP;
             case Character op when op.equals('!') -> TokenType.LOGICAL_OP;

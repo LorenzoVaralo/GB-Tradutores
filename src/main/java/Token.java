@@ -18,6 +18,11 @@ public class Token {
 
     @Override
     public String toString() {
+        
+        if (Constants.contains(lexeme)) {
+            return this.getLexeme() + " - " + getType().getDesc() + " " + this.getLexeme();
+        }
+        
         return this.getLexeme() + " - " + getType().getDesc();
     }
 }
