@@ -20,7 +20,7 @@ def soma(a, b):
     return a + b
 
 resultado = (x == y) or (x != y) and not flag
-verifica = x in [1, 2, 3] or x is None
+verifica = x in [1, 2, 3]
 
 mensagem = """Essa é uma
 string multilinha de teste"""
