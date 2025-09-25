@@ -231,7 +231,7 @@ public class PythonLexicalAnalyzer {
         return new Token(tokenType, numberStr);
     }
 
-    // Identifica identificadores e palavras reservadas
+    // Identifica identificadores, funções embutidas e palavras reservadas
     private Token readIdentifier() {
         String text = expr.accumulateWhile(c -> Character.isLetterOrDigit(c) || c == '_');
 
