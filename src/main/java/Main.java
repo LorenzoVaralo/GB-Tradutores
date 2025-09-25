@@ -1,11 +1,15 @@
 import java.io.File;
 import java.nio.file.Paths;
 
+/*
+    Trabalho elaborado por: Lorenzo Varalo, Laura Skorupski, Inara Valentim e Willian Silveira
+ */
+
 public class Main {
     public static void main(String[] args) {
         String rootPath = Paths.get("").toAbsolutePath().toString();
         String subPath  = "/src/main/python/codes";
-        String sourceCode = rootPath + subPath + "/program.txt";
+        String sourceCode = rootPath + subPath + "/program3.txt";
 
         System.out.println("Analisando arquivo: " + sourceCode);
         System.out.println("Tokens encontrados:");

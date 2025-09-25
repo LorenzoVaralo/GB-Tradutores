@@ -26,7 +26,7 @@ public class PythonLexicalAnalyzer {
                 int currentIndent = countIndentation(line);
                 
                 if (currentIndent % 4 != 0) {
-                    throw new RuntimeException("Erro de indentação: identação incorreta na linha " + lineNumber);
+                    throw new RuntimeException("Erro de indentação: indentação incorreta na linha " + lineNumber);
                 }
             }
         }
@@ -127,7 +127,7 @@ public class PythonLexicalAnalyzer {
 
                     String indentation = expr.accumulateWhile(symbol -> symbol == ' ' || symbol == '\t');
                     if (indentation.length() != 4) {
-                        throw new RuntimeException("Erro de indentação: identação incorreta após o símbolo ':'");
+                        throw new RuntimeException("Erro de indentação: indentação incorreta após o símbolo ':'");
                     }
                 } else {
                     throw new RuntimeException("Erro de indentação: esperado quebra de linha após ':'");
