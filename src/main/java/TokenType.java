@@ -7,6 +7,7 @@ public enum TokenType {
     NONE("Literal None"),
     IDENTIFIER("Identificador"),
     RESERVED_WORD("Palavra Reservada"),
+    BUILT_IN_FUNCTION("Função Embutida"),
     ARITHMETIC_OP("Operador Aritmético"),
     RELATIONAL_OP("Operador Relacional"),
     LOGICAL_OP("Operador Lógico"),

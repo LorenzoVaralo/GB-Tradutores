@@ -247,6 +247,8 @@ public class PythonLexicalAnalyzer {
             } else {
                 tokenType = TokenType.RESERVED_WORD;
             }
+        } else if (Constants.BUILT_IN_FUNCTION.contains(text)) {
+            tokenType = TokenType.BUILT_IN_FUNCTION;
         } else {
             tokenType = TokenType.IDENTIFIER;
         }
