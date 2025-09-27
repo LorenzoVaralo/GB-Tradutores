@@ -2,7 +2,7 @@ import java.io.File;
 import java.nio.file.Paths;
 
 /*
-    Trabalho elaborado por: Lorenzo Varalo, Laura Skorupski, Inara Valentim e Willian Silveira
+    Trabalho elaborado por: Lorenzo Varalo (), Laura Skorupski (1925866), Inara Valentim (1930142) e Willian Silveira (1928138)
  */
 
 public class Main {
